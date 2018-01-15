@@ -1,12 +1,12 @@
 import requests
-from Source import OrderPrototype
+from collections import namedtuple
 import json
 
 class GDAX:
     def __init__(self):
         self.api_endpoint = "https://api.gdax.com/"
         self.symbol_list = []
-        self.order_model = OrderPrototype.Order()
+        self.currency = namedtuple("Currency", ["symbol", "exchange", "price", "volume"])
 
     def get_symbols(self):
         response = requests.request("GET", self.api_endpoint + "products")
@@ -16,10 +16,15 @@ class GDAX:
         return self.symbol_list
 
     def get_products(self):
+        product_list = []
         self.get_symbols()
         for symbol in self.symbol_list:
             if symbol == "BTC-USD" or symbol == "LTC-USD" or symbol == "ETH-USD" or symbol == "BCH-USD":
                 response = requests.request("GET", self.api_endpoint + "products/" + symbol + "/ticker")
                 product = json.loads(response.text)
-                self.order_model.add_product(symbol.replace("-","").lower(), "GDAX", product["price"], product["volume"])
-        return self.order_model.return_products()
+                product_list.append(
+                    self.currency(symbol=symbol.replace("-","").lower(), 
+                    exchange="GDAX", 
+                    price=float(product["price"]), 
+                    volume=float(product["volume"])))
+        return product_list

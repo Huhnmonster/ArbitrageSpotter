@@ -1,11 +1,11 @@
 import json
 import requests
-from Source import OrderPrototype
+from collections import namedtuple
 
 class Bitstamp:
     def __init__(self):
         self.api_endpoint = "https://www.bitstamp.net/api/v2/"
-        self.order_model = OrderPrototype.Order()
+        self.currency = namedtuple("Currency", ["symbol", "exchange", "price", "volume"])
         self.symbol_list = []
 
     def get_symbols(self):
@@ -16,10 +16,15 @@ class Bitstamp:
         return self.symbol_list
 
     def get_products(self):
+        product_list = []
         self.get_symbols()
         for symbol in self.symbol_list:
             if symbol[3:] == "usd" and symbol[:3] != "eur":
                 response = requests.request("GET", self.api_endpoint + "ticker/" + symbol)
                 product = json.loads(response.text)
-                self.order_model.add_product(symbol, "Bitstamp", float(product["last"]), float(product["volume"]))
-        return self.order_model.return_products()
+                product_list.append(self.currency(
+                    symbol=symbol,
+                    exchange="Bitstamp",
+                    price=float(product["last"]),
+                    volume=float(product["volume"])))
+        return product_list
